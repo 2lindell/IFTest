@@ -1,57 +1,57 @@
 import { create } from 'zustand'
-import { WorldObject, Rule, WorldState } from '../lib/types'
+import { Kind, Rulebook, WorldState } from '../lib/types'
 
 interface Store extends WorldState {
-  addObject: (object: WorldObject) => void
-  updateObject: (id: string, object: Partial<WorldObject>) => void
-  deleteObject: (id: string) => void
-  addRule: (rule: Rule) => void
-  updateRule: (id: string, rule: Partial<Rule>) => void
-  deleteRule: (id: string) => void
-  setSelectedObject: (id?: string) => void
-  setSelectedRule: (id?: string) => void
-  setObjects: (objects: WorldObject[]) => void
-  setRules: (rules: Rule[]) => void
+  addKind: (kind: Kind) => void
+  updateKind: (id: string, kind: Partial<Kind>) => void
+  deleteKind: (id: string) => void
+  addRulebook: (rulebook: Rulebook) => void
+  updateRulebook: (id: string, rulebook: Partial<Rulebook>) => void
+  deleteRulebook: (id: string) => void
+  setSelectedKind: (id?: string) => void
+  setSelectedRulebook: (id?: string) => void
+  setKinds: (kinds: Kind[]) => void
+  setRulebooks: (rulebooks: Rulebook[]) => void
 }
 
 export const useWorldStore = create<Store>((set) => ({
-  objects: [],
-  rules: [],
-  selectedObjectId: undefined,
-  selectedRuleId: undefined,
+  kinds: [],
+  rulebooks: [],
+  selectedKindId: undefined,
+  selectedRulebookId: undefined,
   
-  addObject: (object) => set((state) => ({
-    objects: [...state.objects, object],
+  addKind: (kind) => set((state) => ({
+    kinds: [...state.kinds, kind],
   })),
   
-  updateObject: (id, updates) => set((state) => ({
-    objects: state.objects.map((obj) =>
-      obj.id === id ? { ...obj, ...updates } : obj
+  updateKind: (id, updates) => set((state) => ({
+    kinds: state.kinds.map((kind) =>
+      kind.kind_id === id ? { ...kind, ...updates } : kind
     ),
   })),
   
-  deleteObject: (id) => set((state) => ({
-    objects: state.objects.filter((obj) => obj.id !== id),
-    selectedObjectId: state.selectedObjectId === id ? undefined : state.selectedObjectId,
+  deleteKind: (id) => set((state) => ({
+    kinds: state.kinds.filter((kind) => kind.kind_id !== id),
+    selectedKindId: state.selectedKindId === id ? undefined : state.selectedKindId,
   })),
   
-  addRule: (rule) => set((state) => ({
-    rules: [...state.rules, rule],
+  addRulebook: (rulebook) => set((state) => ({
+    rulebooks: [...state.rulebooks, rulebook],
   })),
   
-  updateRule: (id, updates) => set((state) => ({
-    rules: state.rules.map((rule) =>
-      rule.id === id ? { ...rule, ...updates } : rule
+  updateRulebook: (id, updates) => set((state) => ({
+    rulebooks: state.rulebooks.map((rulebook) =>
+      rulebook.rulebook_id === id ? { ...rulebook, ...updates } : rulebook
     ),
   })),
   
-  deleteRule: (id) => set((state) => ({
-    rules: state.rules.filter((rule) => rule.id !== id),
-    selectedRuleId: state.selectedRuleId === id ? undefined : state.selectedRuleId,
+  deleteRulebook: (id) => set((state) => ({
+    rulebooks: state.rulebooks.filter((rulebook) => rulebook.rulebook_id !== id),
+    selectedRulebookId: state.selectedRulebookId === id ? undefined : state.selectedRulebookId,
   })),
   
-  setSelectedObject: (id) => set({ selectedObjectId: id }),
-  setSelectedRule: (id) => set({ selectedRuleId: id }),
-  setObjects: (objects) => set({ objects }),
-  setRules: (rules) => set({ rules }),
+  setSelectedKind: (id) => set({ selectedKindId: id, selectedRulebookId: undefined }),
+  setSelectedRulebook: (id) => set({ selectedRulebookId: id, selectedKindId: undefined }),
+  setKinds: (kinds) => set({ kinds }),
+  setRulebooks: (rulebooks) => set({ rulebooks }),
 }))
