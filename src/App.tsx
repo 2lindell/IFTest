@@ -11,30 +11,28 @@ function App() {
   const setRules = useWorldStore((state) => state.setRules)
   
   useEffect(() => {
-    // Load initial data from Supabase
-    const loadData = async () => {
-      try {
-        // TODO: Replace with actual Supabase table names
-        // const { data: objects, error: objectsError } = await supabase
-        //   .from('world_objects')
-        //   .select('*')
-        // 
-        // const { data: rules, error: rulesError } = await supabase
-        //   .from('rules')
-        //   .select('*')
-        // 
-        // if (objectsError) throw objectsError
-        // if (rulesError) throw rulesError
-        // 
-        // setObjects(objects || [])
-        // setRules(rules || [])
-      } catch (error) {
-        console.error('Error loading data:', error)
-      }
+  const loadData = async () => {
+    try {
+      const { data: kinds, error: kindsError } = await supabase
+        .from('kinds')
+        .select('*')
+      
+      const { data: rulebooks, error: rulebooksError } = await supabase
+        .from('rulebooks')
+        .select('*')
+      
+      if (kindsError) throw kindsError
+      if (rulebooksError) throw rulebooksError
+      
+      setKinds(kinds || [])
+      setRulebooks(rulebooks || [])
+    } catch (error) {
+      console.error('Error loading data:', error)
     }
-    
-    loadData()
-  }, [])
+  }
+  
+  loadData()
+}, [])
   
   return (
     <div className="min-h-screen bg-gray-100">
