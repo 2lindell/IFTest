@@ -1,28 +1,26 @@
-export interface WorldObject {
-  id: string
-  name: string
-  description: string
-  type: 'object' | 'location' | 'character' | 'rule'
-  properties: Record<string, unknown>
-  parentId?: string
-  createdAt: string
-  updatedAt: string
+export interface Kind {
+  kind_id: string
+  kind_name: string
+  parent_kind_id?: string
+  kind_properties: Record<string, unknown>
+  createdAt?: string
+  updatedAt?: string
 }
 
-export interface Rule {
-  id: string
-  name: string
-  condition: string
-  action: string
-  description: string
-  enabled: boolean
-  createdAt: string
-  updatedAt: string
+export interface Rulebook {
+  rulebook_id: string
+  rulebook_name: string
+  rulebook_basis: string
+  rulebook_result_kind: string
+  rulebook_named_outcomes_success?: string
+  rulebook_named_outcomes_failure?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface WorldState {
-  objects: WorldObject[]
-  rules: Rule[]
-  selectedObjectId?: string
-  selectedRuleId?: string
+  kinds: Kind[]
+  rulebooks: Rulebook[]
+  selectedKindId?: string
+  selectedRulebookId?: string
 }
