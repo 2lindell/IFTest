@@ -1,9 +1,7 @@
-import { useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
 import { useWorldStore } from '../store/worldStore'
 
 export function EditorPanel() {
-  const editorRef = useRef(null)
   const selectedObjectId = useWorldStore((state) => state.selectedObjectId)
   const objects = useWorldStore((state) => state.objects)
   const updateObject = useWorldStore((state) => state.updateObject)

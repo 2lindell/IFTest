@@ -14,13 +14,20 @@ function App() {
   
   useEffect(() => {
     const loadData = async () => {
+      if (!supabase) {
+        console.warn('Supabase is not configured; skipping data load.')
+        setKinds([])
+        setRulebooks([])
+        return
+      }
+
       try {
         const { data: kinds, error: kindsError } = await supabase
-          .from('kinds')
+          .from('Kinds')
           .select('*')
         
         const { data: rulebooks, error: rulebooksError } = await supabase
-          .from('rulebooks')
+          .from('Rulebooks')
           .select('*')
         
         if (kindsError) throw kindsError

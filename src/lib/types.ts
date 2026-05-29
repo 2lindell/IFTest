@@ -18,9 +18,28 @@ export interface Rulebook {
   updatedAt?: string
 }
 
+export interface WorldObject {
+  id: string
+  name: string
+  description: string
+  parentId?: string
+  type: string
+  properties: Record<string, unknown>
+}
+
+export interface Rule {
+  id: string
+  name: string
+  description: string
+}
+
 export interface WorldState {
   kinds: Kind[]
   rulebooks: Rulebook[]
+  objects: WorldObject[]
+  rules: Rule[]
   selectedKindId?: string
   selectedRulebookId?: string
+  selectedObjectId?: string
+  selectedRuleId?: string
 }
