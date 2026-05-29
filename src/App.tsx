@@ -4,6 +4,7 @@ import { KindsTree } from './components/KindsTree'
 import { RulebooksList } from './components/RulebooksList'
 import { KindEditor } from './components/KindEditor'
 import { RulebookEditor } from './components/RulebookEditor'
+import { RulebookDeclarationsBox } from './components/RulebookDeclarationsBox'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -67,7 +68,7 @@ function App() {
           </div>
           
           {/* Main Content - Editors and Details */}
-          <div className="col-span-9 overflow-hidden">
+          <div className="col-span-9 overflow-auto">
             {selectedKindId && !selectedRulebookId && (
               <KindEditor />
             )}
@@ -75,7 +76,7 @@ function App() {
               <RulebookEditor />
             )}
             {!selectedKindId && !selectedRulebookId && (
-              <div className="h-full bg-white rounded-lg shadow flex items-center justify-center">
+              <div className="bg-white rounded-lg shadow flex items-center justify-center p-8">
                 <div className="text-center text-gray-500">
                   <p className="text-lg font-semibold">Select a Kind or Rulebook to begin</p>
                   <p className="text-sm mt-2">Choose from the left panel to edit</p>
@@ -83,6 +84,11 @@ function App() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Rulebook Declarations Section */}
+        <div className="mt-8">
+          <RulebookDeclarationsBox />
         </div>
       </main>
     </div>
