@@ -30,18 +30,7 @@ cd IFTest
 npm install
 ```
 
-3. Create `.env.local` based on `.env.example`
-```bash
-cp .env.example .env.local
-```
-
-4. Add your Supabase credentials to `.env.local`
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-5. Start the development server
+3. Start the development server
 ```bash
 npm run dev
 ```
@@ -68,35 +57,7 @@ src/
 
 ## Database Schema
 
-You'll need to create these tables in Supabase:
 
-### world_objects
-```sql
-CREATE TABLE world_objects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  description TEXT,
-  type TEXT NOT NULL CHECK (type IN ('object', 'location', 'character', 'rule')),
-  properties JSONB DEFAULT '{}',
-  parent_id UUID REFERENCES world_objects(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### rules
-```sql
-CREATE TABLE rules (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  condition TEXT NOT NULL,
-  action TEXT NOT NULL,
-  description TEXT,
-  enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
 
 ## Development
 
@@ -115,14 +76,6 @@ CREATE TABLE rules (
 - **Zustand** - State management
 - **Monaco Editor** - Code editor
 - **Lucide Icons** - Icons
-
-## Next Steps
-
-1. Set up your Supabase project and create the database tables
-2. Implement real-time subscriptions in Supabase
-3. Add authentication
-4. Create custom Inform 7 parser for natural language
-5. Add export functionality
 
 ## License
 
