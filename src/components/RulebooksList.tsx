@@ -3,9 +3,13 @@ import { BookOpen, Trash2 } from 'lucide-react'
 
 export function RulebooksList() {
   const rulebooks = useWorldStore((state) => state.rulebooks)
+  const kinds = useWorldStore((state) => state.kinds)
   const selectedRulebookId = useWorldStore((state) => state.selectedRulebookId)
   const setSelectedRulebook = useWorldStore((state) => state.setSelectedRulebook)
   const deleteRulebook = useWorldStore((state) => state.deleteRulebook)
+
+  const lookupKindName = (kindId: string) =>
+    kinds.find((kind) => kind.kind_id === kindId)?.kind_name || kindId
   
   return (
     <div className="h-full bg-white rounded-lg shadow overflow-y-auto">
@@ -33,7 +37,9 @@ export function RulebooksList() {
                 className="flex-1 text-left"
               >
                 <p className="font-medium text-sm">{rulebook.rulebook_name}</p>
-                <p className="text-xs text-gray-600 mt-1">{rulebook.rulebook_basis}</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {rulebook.rulebook_basis_name || lookupKindName(rulebook.rulebook_basis)}
+                </p>
               </button>
               <button
                 onClick={() => deleteRulebook(rulebook.rulebook_id)}

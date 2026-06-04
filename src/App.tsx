@@ -23,19 +23,67 @@ function App() {
       }
 
       try {
-        const { data: kinds, error: kindsError } = await supabase
-          .from('Kinds')
-          .select('*')
-        
+        const kindViews = ['Kinds', 'Kinds of Value']
+        const loadedKinds = []
+
+        for (const view of kindViews) {
+          const { data, error } = await supabase.from(view).select('*')
+          if (error) throw error
+          if (data) {
+            for (const row of data) {
+              loadedKinds.push({
+                kind_id: String((row as any).kind_id),
+                kind_name: String((row as any).kind_name),
+                parent_kind_name: (row as any).parent_kind_name
+                  ? String((row as any).parent_kind_name)
+                  : undefined,
+                parent_kind_id: undefined,
+                source: view,
+                kind_properties: (row as any).kind_properties ?? {},
+              })
+            }
+          }
+        }
+
+        const kindByName = new Map<string, typeof loadedKinds[number]>()
+        for (const kind of loadedKinds) {
+          kindByName.set(kind.kind_name, kind)
+        }
+
+        for (const kind of loadedKinds) {
+          if (kind.parent_kind_name) {
+            const parent = kindByName.get(kind.parent_kind_name)
+            kind.parent_kind_id = parent?.kind_id
+          }
+        }
+
         const { data: rulebooks, error: rulebooksError } = await supabase
           .from('Rulebooks')
           .select('*')
-        
-        if (kindsError) throw kindsError
+
         if (rulebooksError) throw rulebooksError
-        
-        setKinds(kinds || [])
-        setRulebooks(rulebooks || [])
+
+        const { data: assertionRows, error: assertionsError } = await supabase
+          .from('Rulebook Assertions')
+          .select('rulebook_id, rulebook_basis_name, rulebook_result_kind_name')
+
+        if (assertionsError) throw assertionsError
+
+        const assertionMap = new Map(
+          (assertionRows ?? []).map((row: any) => [String(row.rulebook_id), row]),
+        )
+
+        const enrichedRulebooks = (rulebooks ?? []).map((rulebook: any) => {
+          const assertion = assertionMap.get(String(rulebook.rulebook_id))
+          return {
+            ...rulebook,
+            rulebook_basis_name: assertion?.rulebook_basis_name,
+            rulebook_result_kind_name: assertion?.rulebook_result_kind_name,
+          }
+        })
+
+        setKinds(loadedKinds)
+        setRulebooks(enrichedRulebooks)
       } catch (error) {
         console.error('Error loading data:', error)
       }

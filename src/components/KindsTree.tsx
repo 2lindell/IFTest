@@ -1,5 +1,4 @@
 import { useWorldStore } from '../store/worldStore'
-import { Layers } from 'lucide-react'
 
 export function KindsTree() {
   const kinds = useWorldStore((state) => state.kinds)
@@ -10,23 +9,28 @@ export function KindsTree() {
     const children = kinds.filter((k) => k.parent_kind_id === kind.kind_id)
     
     return (
-      <div key={kind.kind_id}>
+      <div key={kind.kind_id} className="space-y-1">
         <button
           onClick={() => setSelectedKind(kind.kind_id)}
-          className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 rounded transition-colors ${
-            selectedKindId === kind.kind_id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-900'
+          className={`w-full text-left rounded transition-colors ${
+            selectedKindId === kind.kind_id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-900 hover:bg-gray-100'
           }`}
-          style={{ paddingLeft: `${depth * 24 + 12}px` }}
+          style={{ paddingLeft: `${depth * 20 + 12}px` }}
         >
-          <Layers size={16} className="flex-shrink-0" />
           <span className="text-sm">{kind.kind_name}</span>
         </button>
-        {children.map((child) => renderKind(child, depth + 1))}
+        {children.length > 0 && (
+          <div className="ml-4 border-l border-gray-200">
+            {children.map((child) => renderKind(child, depth + 1))}
+          </div>
+        )}
       </div>
     )
   }
   
   const rootKinds = kinds.filter((kind) => !kind.parent_kind_id)
+  const kindRoots = rootKinds.filter((kind) => kind.source === 'Kinds')
+  const valueRoots = rootKinds.filter((kind) => kind.source === 'Kinds of Value')
   
   return (
     <div className="h-full bg-white rounded-lg shadow overflow-y-auto">
@@ -37,7 +41,13 @@ export function KindsTree() {
         {rootKinds.length === 0 ? (
           <p className="text-sm text-gray-500 p-2">No kinds yet</p>
         ) : (
-          rootKinds.map((kind) => renderKind(kind))
+          <div className="space-y-2">
+            {kindRoots.map((kind) => renderKind(kind))}
+            {kindRoots.length > 0 && valueRoots.length > 0 && (
+              <div className="border-t border-gray-200 my-2" />
+            )}
+            {valueRoots.map((kind) => renderKind(kind))}
+          </div>
         )}
       </div>
     </div>

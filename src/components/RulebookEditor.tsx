@@ -3,10 +3,14 @@ import { useWorldStore } from '../store/worldStore'
 export function RulebookEditor() {
   const selectedRulebookId = useWorldStore((state) => state.selectedRulebookId)
   const rulebooks = useWorldStore((state) => state.rulebooks)
+  const kinds = useWorldStore((state) => state.kinds)
   
   const selectedRulebook = rulebooks.find(
     (rb) => rb.rulebook_id === selectedRulebookId
   )
+
+  const lookupKindName = (kindId: string) =>
+    kinds.find((kind) => kind.kind_id === kindId)?.kind_name || kindId
   
   if (!selectedRulebook) {
     return null
@@ -32,7 +36,9 @@ export function RulebookEditor() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Basis
               </label>
-              <p className="text-gray-900">{selectedRulebook.rulebook_basis}</p>
+              <p className="text-gray-900">
+                {selectedRulebook.rulebook_basis_name || lookupKindName(selectedRulebook.rulebook_basis)}
+              </p>
             </div>
           </div>
           
@@ -41,7 +47,9 @@ export function RulebookEditor() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Result Kind
             </label>
-            <p className="text-gray-900">{selectedRulebook.rulebook_result_kind}</p>
+            <p className="text-gray-900">
+              {selectedRulebook.rulebook_result_kind_name || lookupKindName(selectedRulebook.rulebook_result_kind)}
+            </p>
           </div>
           
           {/* Named Outcomes */}

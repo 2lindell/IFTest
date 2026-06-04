@@ -2,14 +2,19 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { BookOpen } from 'lucide-react'
 
-interface RulebookDeclaration {
-  rulebook_id: string
-  rulebook_name: string
-  rulebook_declaration: string
+type AssertionView = {
+  viewName: string
+  fieldName: string
 }
 
+const assertionViews: AssertionView[] = [
+  { viewName: 'Rulebook Assertions', fieldName: 'rulebook_assertion' },
+  { viewName: 'Relation Assertions', fieldName: 'relation_assertion' },
+  { viewName: 'Relation Verb Assertions', fieldName: 'relation_verb_assertion' },  { viewName: 'Kinds', fieldName: 'kind_assertion' },
+  { viewName: 'Kinds of Value', fieldName: 'kind_assertion' },]
+
 export function RulebookDeclarationsBox() {
-  const [declarations, setDeclarations] = useState<RulebookDeclaration[]>([])
+  const [storyLines, setStoryLines] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,12 +22,45 @@ export function RulebookDeclarationsBox() {
     const loadDeclarations = async () => {
       try {
         setLoading(true)
-        const { data, error: fetchError } = await supabase
-          .from('rulebookdeclarations')
-          .select('*')
 
-        if (fetchError) throw fetchError
-        setDeclarations(data || [])
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized')
+        }
+
+        const supabaseClient = supabase
+
+        const results = await Promise.all(
+          assertionViews.map(async ({ viewName, fieldName }) => {
+            const { data, error: fetchError } = await supabaseClient
+              .from(viewName)
+              .select(fieldName)
+
+            if (fetchError) {
+              throw new Error(`${viewName}: ${fetchError.message}`)
+            }
+
+            return {
+              viewName,
+              fieldName,
+              rows: ((data ?? []) as unknown) as Array<Record<string, string>>,
+            }
+          }),
+        )
+
+        const seenLines = new Set<string>()
+        const combinedLines = [] as string[]
+
+        for (const { viewName, fieldName, rows } of results) {
+          for (const row of rows) {
+            const value = row[fieldName]
+            if (!value) continue
+            if (viewName === 'Kinds of Value' && seenLines.has(value)) continue
+            combinedLines.push(value)
+            seenLines.add(value)
+          }
+        }
+
+        setStoryLines(combinedLines)
         setError(null)
       } catch (err) {
         console.error('Error loading rulebook declarations:', err)
@@ -35,9 +73,7 @@ export function RulebookDeclarationsBox() {
     loadDeclarations()
   }, [])
 
-  const storyText = declarations
-    .map((d) => d.rulebook_declaration)
-    .join('\n\n')
+  const storyText = storyLines.join('\n\n')
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
