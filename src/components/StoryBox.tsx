@@ -268,9 +268,8 @@ export function StoryBox() {
           continue
         }
 
-        // fallback: insert into base table
-        const base = mapViewToBase(viewName)
-        paramStmts.push({ text: `INSERT INTO "${base}" (${fieldName}) VALUES ($1);`, params: [trimmed] })
+        // unparsed statement: generate error comment
+        paramStmts.push({ text: `-- ERROR: Could not parse statement: ${trimmed}`, params: [] })
       }
     }
     // Format parameterized statements for display (one per line with params)
@@ -504,14 +503,8 @@ export function StoryBox() {
           continue
         }
 
-        // fallback: insert into inferred view's base table
-        const target = inferInsertTarget(block, kindNameToView)
-        const baseTable = target.viewName === 'Kinds' || target.viewName === 'Kinds of Value' ? 'All Kinds' : target.viewName === 'Relation Verb Assertions' || target.viewName === 'Relation Assertions' ? 'Relations' : target.viewName === 'Rulebook Assertions' ? 'Rulebooks' : target.viewName
-        const { error: insertErr } = await supabase.from(baseTable).insert([{ [target.fieldName]: block }])
-        if (insertErr) {
-          console.error(`Fallback insert error for ${baseTable}:`, insertErr)
-          throw insertErr
-        }
+        // unparsed statement: error
+        throw new Error(`Could not parse statement: ${block}`)
       }
 
       alert('Update/Insert operations completed (check console for details).')
