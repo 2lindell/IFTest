@@ -35,6 +35,21 @@ export interface Rule {
   id: string
   name: string
   description: string
+  rulebook_id?: string
+}
+
+export interface Relation {
+  relation_id: string
+  relation_name: string
+  relation_verb: string[]
+  relation_reversed_verb?: string[]
+  relation_relates_kind: string
+  relation_relates_to_kind: string
+  relation_relates_kind_name?: string
+  relation_relates_to_kind_name?: string
+  relation_type?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface WorldState {
@@ -42,8 +57,10 @@ export interface WorldState {
   rulebooks: Rulebook[]
   objects: WorldObject[]
   rules: Rule[]
+  relations: Relation[]
   selectedKindId?: string
   selectedRulebookId?: string
   selectedObjectId?: string
   selectedRuleId?: string
+  selectedRelationId?: string
 }

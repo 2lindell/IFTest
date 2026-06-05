@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Kind, Rulebook, Rule, WorldObject, WorldState } from '../lib/types'
+import { Kind, Rulebook, Rule, Relation, WorldObject, WorldState } from '../lib/types'
 
 interface Store extends WorldState {
   addKind: (kind: Kind) => void
@@ -8,18 +8,25 @@ interface Store extends WorldState {
   addRulebook: (rulebook: Rulebook) => void
   updateRulebook: (id: string, rulebook: Partial<Rulebook>) => void
   deleteRulebook: (id: string) => void
+  addRule: (rule: Rule) => void
+  updateRule: (id: string, rule: Partial<Rule>) => void
   addObject: (object: WorldObject) => void
   updateObject: (id: string, updates: Partial<WorldObject>) => void
   deleteObject: (id: string) => void
   deleteRule: (id: string) => void
+  addRelation: (relation: Relation) => void
+  updateRelation: (id: string, relation: Partial<Relation>) => void
+  deleteRelation: (id: string) => void
   setSelectedKind: (id?: string) => void
   setSelectedRulebook: (id?: string) => void
   setSelectedObject: (id?: string) => void
   setSelectedRule: (id?: string) => void
+  setSelectedRelation: (id?: string) => void
   setKinds: (kinds: Kind[]) => void
   setRulebooks: (rulebooks: Rulebook[]) => void
   setObjects: (objects: WorldObject[]) => void
   setRules: (rules: Rule[]) => void
+  setRelations: (relations: Relation[]) => void
 }
 
 export const useWorldStore = create<Store>((set) => ({
@@ -27,10 +34,12 @@ export const useWorldStore = create<Store>((set) => ({
   rulebooks: [],
   objects: [],
   rules: [],
+  relations: [],
   selectedKindId: undefined,
   selectedRulebookId: undefined,
   selectedObjectId: undefined,
   selectedRuleId: undefined,
+  selectedRelationId: undefined,
   
   addKind: (kind) => set((state) => ({
     kinds: [...state.kinds, kind],
@@ -59,7 +68,18 @@ export const useWorldStore = create<Store>((set) => ({
   
   deleteRulebook: (id) => set((state) => ({
     rulebooks: state.rulebooks.filter((rulebook) => rulebook.rulebook_id !== id),
+    rules: state.rules.filter((rule) => rule.rulebook_id !== id),
     selectedRulebookId: state.selectedRulebookId === id ? undefined : state.selectedRulebookId,
+  })),
+  
+  addRule: (rule) => set((state) => ({
+    rules: [...state.rules, rule],
+  })),
+  
+  updateRule: (id, updates) => set((state) => ({
+    rules: state.rules.map((rule) =>
+      rule.id === id ? { ...rule, ...updates } : rule
+    ),
   })),
   
   addObject: (object) => set((state) => ({
@@ -82,12 +102,29 @@ export const useWorldStore = create<Store>((set) => ({
     selectedRuleId: state.selectedRuleId === id ? undefined : state.selectedRuleId,
   })),
   
-  setSelectedKind: (id) => set({ selectedKindId: id, selectedRulebookId: undefined }),
-  setSelectedRulebook: (id) => set({ selectedRulebookId: id, selectedKindId: undefined }),
+  addRelation: (relation) => set((state) => ({
+    relations: [...state.relations, relation],
+  })),
+  
+  updateRelation: (id, updates) => set((state) => ({
+    relations: state.relations.map((relation) =>
+      relation.relation_id === id ? { ...relation, ...updates } : relation
+    ),
+  })),
+  
+  deleteRelation: (id) => set((state) => ({
+    relations: state.relations.filter((relation) => relation.relation_id !== id),
+    selectedRelationId: state.selectedRelationId === id ? undefined : state.selectedRelationId,
+  })),
+  
+  setSelectedKind: (id) => set({ selectedKindId: id, selectedRulebookId: undefined, selectedRelationId: undefined }),
+  setSelectedRulebook: (id) => set({ selectedRulebookId: id, selectedKindId: undefined, selectedRelationId: undefined }),
   setSelectedObject: (id) => set({ selectedObjectId: id }),
   setSelectedRule: (id) => set({ selectedRuleId: id }),
+  setSelectedRelation: (id) => set({ selectedRelationId: id, selectedKindId: undefined, selectedRulebookId: undefined }),
   setKinds: (kinds) => set({ kinds }),
   setRulebooks: (rulebooks) => set({ rulebooks }),
   setObjects: (objects) => set({ objects }),
   setRules: (rules) => set({ rules }),
+  setRelations: (relations) => set({ relations }),
 }))
