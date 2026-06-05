@@ -6,8 +6,9 @@ import { RelationsList } from './components/RelationsList'
 import { KindEditor } from './components/KindEditor'
 import { RulebookEditor } from './components/RulebookEditor'
 import { RelationEditor } from './components/RelationEditor'
-import { RulebookDeclarationsBox } from './components/RulebookDeclarationsBox'
+import { StoryBox } from './components/StoryBox'
 import { supabase } from './lib/supabase'
+import { Kind } from './lib/types'
 
 function App() {
   const setKinds = useWorldStore((state) => state.setKinds)
@@ -29,7 +30,7 @@ function App() {
 
       try {
         const kindViews = ['Kinds', 'Kinds of Value']
-        const loadedKinds = []
+        const loadedKinds: Kind[] = []
 
         for (const view of kindViews) {
           const { data, error } = await supabase.from(view).select('*')
@@ -179,7 +180,7 @@ function App() {
 
         {/* Rulebook Declarations Section */}
         <div className="mt-8">
-          <RulebookDeclarationsBox />
+          <StoryBox />
         </div>
       </main>
     </div>

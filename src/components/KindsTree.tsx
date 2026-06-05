@@ -7,20 +7,24 @@ export function KindsTree() {
   
   const renderKind = (kind: typeof kinds[0], depth: number = 0) => {
     const children = kinds.filter((k) => k.parent_kind_id === kind.kind_id)
-    
+    const indentStep = 16
+    const lineOffset = 8
+    const indent = depth * indentStep
+
     return (
-      <div key={kind.kind_id} className="space-y-1">
+      <div key={kind.kind_id} className="space-y-1 relative" style={{ paddingLeft: `${indent}px` }}>
+        {children.length > 0 && <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />}
         <button
           onClick={() => setSelectedKind(kind.kind_id)}
           className={`w-full text-left rounded transition-colors ${
             selectedKindId === kind.kind_id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-900 hover:bg-gray-100'
           }`}
-          style={{ paddingLeft: `${depth * 20 + 12}px` }}
+          style={{ paddingLeft: `${lineOffset}px` }}
         >
           <span className="text-sm">{kind.kind_name}</span>
         </button>
         {children.length > 0 && (
-          <div className="ml-4 border-l border-gray-200">
+          <div className="space-y-1">
             {children.map((child) => renderKind(child, depth + 1))}
           </div>
         )}

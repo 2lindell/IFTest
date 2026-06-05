@@ -1,21 +1,22 @@
 # IFTest - Interactive Fiction World Builder
 
-A React + TypeScript frontend for managing interactive fiction worlds with a Supabase backend.
+A React + TypeScript app for managing interactive fiction kinds, rulebooks, and relations with a Supabase backend.
 
 ## Features
 
-- **World Objects**: Create and manage objects, locations, and characters
-- **Rules System**: Define conditional rules and actions for your world
-- **Live Preview**: See your world descriptions rendered in natural language
-- **Real-time Sync**: Bidirectional synchronization with Supabase
-- **Monaco Editor**: Code-like editing experience for Inform 7 style syntax
-- **Hierarchical Organization**: Organize objects in parent-child relationships
+- **Kinds Browser**: View kinds and value kinds in a hierarchical tree
+- **Kind Editor**: Inspect kind details and edit JSON properties
+- **Rulebook Management**: Browse rulebooks and inspect assertion-backed metadata
+- **Relation Management**: Browse relations and view relation verb mappings
+- **Story Assertions Editor**: Edit the Story box in Monaco
+- **Dry-run Preview**: Preview SQL-like updates and inserts before applying them
+- **Supabase Sync**: Load Kinds, Rulebooks, Relations, and assertion views from Supabase
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 16+
-- A Supabase project (https://supabase.com)
+- A Supabase project configured with the expected tables/views
 
 ### Installation
 
@@ -35,29 +36,45 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open the app
+```bash
+http://localhost:3000
+```
 
 ## Project Structure
 
 ```
 src/
-├── components/       # React components
-│   ├── Editor.tsx    # Monaco editor for descriptions
-│   ├── Preview.tsx   # Natural language preview
-│   ├── ObjectTree.tsx # Hierarchical object browser
-│   └── RulesList.tsx  # Rules management
+├── components/                  # React UI components
+│   ├── KindsTree.tsx
+│   ├── KindEditor.tsx
+│   ├── RulebooksList.tsx
+│   ├── RulebookEditor.tsx
+│   ├── RelationsList.tsx
+│   ├── RelationEditor.tsx
+│   └── StoryBox.tsx
 ├── lib/
-│   ├── supabase.ts   # Supabase client setup
-│   └── types.ts      # TypeScript type definitions
+│   ├── supabase.ts              # Supabase client setup
+│   └── types.ts                 # Shared TypeScript types
 ├── store/
-│   └── worldStore.ts # Zustand state management
-├── App.tsx           # Main app component
-└── index.css         # Tailwind styles
+│   └── worldStore.ts            # Zustand state management
+├── App.tsx                      # Main application shell
+└── index.css                    # Tailwind styles
 ```
 
-## Database Schema
+## Supabase Views / Tables
 
+The app currently reads from these Supabase sources:
 
+- `Kinds`
+- `Kinds of Value`
+- `Rulebooks`
+- `Rulebook Assertions`
+- `Relations`
+- `Relation Assertions`
+- `Relation Verb Assertions`
+
+The Story editor is designed to edit and preview changes to the declaration text stored in these views.
 
 ## Development
 
@@ -69,13 +86,13 @@ src/
 ## Technologies
 
 - **React 18** - UI framework
-- **TypeScript** - Type safety
+- **TypeScript** - Static typing
 - **Vite** - Build tool
 - **Tailwind CSS** - Styling
-- **Supabase** - Backend/Database
-- **Zustand** - State management
-- **Monaco Editor** - Code editor
-- **Lucide Icons** - Icons
+- **Supabase** - backend/database access
+- **Zustand** - state management
+- **Monaco Editor** - embedded code editor
+- **Lucide Icons** - icon set
 
 ## License
 

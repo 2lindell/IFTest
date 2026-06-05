@@ -126,7 +126,6 @@ function conjugateToThirdPerson(verb: string): string {
     'draw': 'draws',
     'choose': 'chooses',
     'cause': 'causes',
-    'follow': 'follows',
     'relate': 'relates',
     'own': 'owns',
     'possess': 'possesses',
@@ -139,8 +138,6 @@ function conjugateToThirdPerson(verb: string): string {
   
   // Regular conjugation rules
   const lastChar = mainVerb[mainVerb.length - 1]
-  const lastTwo = mainVerb.slice(-2)
-  const lastThree = mainVerb.slice(-3)
   
   // Words ending in -s, -x, -z, -ch, -sh: add 'es'
   if (mainVerb.endsWith('s') || mainVerb.endsWith('x') || mainVerb.endsWith('z') || 
