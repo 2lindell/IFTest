@@ -166,6 +166,52 @@ function conjugateToThirdPerson(verb: string): string {
   return restOfPhrase ? conjugated + ' ' + restOfPhrase : conjugated
 }
 
+function isVariousOnSide(relationType: string | undefined, side: 'from' | 'to') {
+  if (!relationType) return false
+  const t = relationType.toLowerCase()
+  // Normalize separators and trim
+  const parts = t.split('-to-').map((p) => p.trim())
+  if (parts.length === 2) {
+    const [left, right] = parts
+    if (side === 'from') return left.includes('various')
+    return right.includes('various')
+  }
+  // Fallback: if the string mentions 'various' assume both sides
+  return t.includes('various')
+}
+
+function annotateKindName(kindName: string | undefined, relationType: string | undefined, side: 'from' | 'to') {
+  const base = (kindName || '').toLowerCase()
+  return isVariousOnSide(relationType, side) ? `${base}(s)` : base
+}
+
+function presentPluralForm(verb: string): string {
+  const phrase = (verb || '').toLowerCase().trim()
+  const cleanPhrase = phrase.startsWith('to ') ? phrase.slice(3) : phrase
+  const words = cleanPhrase.split(' ')
+  const mainVerb = words[0]
+  const rest = words.slice(1).join(' ')
+
+  // plural (non-3rd-person-singular) present tense
+  const irregularPlurals: Record<string, string> = {
+    'be': 'are',
+    'have': 'have',
+    'do': 'do',
+    'go': 'go',
+    'say': 'say',
+    'get': 'get',
+    'is': 'are',
+    'was': 'were',
+  }
+
+  if (irregularPlurals[mainVerb]) {
+    return rest ? irregularPlurals[mainVerb] + ' ' + rest : irregularPlurals[mainVerb]
+  }
+
+  // most verbs use base form for plural subjects
+  return rest ? mainVerb + ' ' + rest : mainVerb
+}
+
 export function RelationEditor() {
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
   const relations = useWorldStore((state) => state.relations)
@@ -174,6 +220,17 @@ export function RelationEditor() {
   const selectedRelation = relations.find(
     (r) => r.relation_id === selectedRelationId
   )
+
+  const fromVarious = isVariousOnSide(selectedRelation?.relation_type, 'from')
+  const toVarious = isVariousOnSide(selectedRelation?.relation_type, 'to')
+
+  const forwardInf = selectedRelation?.relation_verb?.[0] || 'relate'
+  const forwardSing = conjugateToThirdPerson(forwardInf)
+  const forwardPlur = presentPluralForm(forwardInf)
+
+  const reversedInf = selectedRelation?.relation_reversed_verb?.[0] || ''
+  const reversedSing = reversedInf ? conjugateToThirdPerson(reversedInf) : ''
+  const reversedPlur = reversedInf ? presentPluralForm(reversedInf) : ''
 
   const lookupKindName = (kindId: string) =>
     kinds.find((kind) => kind.kind_id === kindId)?.kind_name || kindId
@@ -271,11 +328,15 @@ export function RelationEditor() {
           {/* Info Box */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
             <p className="text-sm text-blue-900">
-              <strong>Relation:</strong> {lookupKindName(selectedRelation.relation_relates_kind).toLowerCase()} {conjugateToThirdPerson(selectedRelation.relation_verb?.[0] || 'relates')} {lookupKindName(selectedRelation.relation_relates_to_kind).toLowerCase()}
+              <strong>Relation:</strong> {annotateKindName(selectedRelation.relation_relates_kind_name || lookupKindName(selectedRelation.relation_relates_kind), selectedRelation.relation_type, 'from')}{' '}
+              { fromVarious ? `${forwardSing} (${forwardPlur})` : forwardSing }{' '}
+              {annotateKindName(selectedRelation.relation_relates_to_kind_name || lookupKindName(selectedRelation.relation_relates_to_kind), selectedRelation.relation_type, 'to')}
             </p>
             {selectedRelation.relation_reversed_verb && selectedRelation.relation_reversed_verb.length > 0 && (
               <p className="text-sm text-blue-900">
-                <strong>Reversed:</strong> {lookupKindName(selectedRelation.relation_relates_to_kind).toLowerCase()} {conjugateToThirdPerson(selectedRelation.relation_reversed_verb[0])} {lookupKindName(selectedRelation.relation_relates_kind).toLowerCase()}
+                <strong>Reversed:</strong> {annotateKindName(selectedRelation.relation_relates_to_kind_name || lookupKindName(selectedRelation.relation_relates_to_kind), selectedRelation.relation_type, 'to')}{' '}
+                { toVarious ? `${reversedSing} (${reversedPlur})` : reversedSing }{' '}
+                {annotateKindName(selectedRelation.relation_relates_kind_name || lookupKindName(selectedRelation.relation_relates_kind), selectedRelation.relation_type, 'from')}
               </p>
             )}
           </div>
