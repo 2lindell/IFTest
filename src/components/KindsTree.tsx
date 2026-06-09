@@ -1,6 +1,7 @@
+import { PlusCircle } from 'lucide-react'
 import { useWorldStore } from '../store/worldStore'
 
-export function KindsTree() {
+export function KindsTree({ onNewKind }: { onNewKind: () => void }) {
   const kinds = useWorldStore((state) => state.kinds)
   const selectedKindId = useWorldStore((state) => state.selectedKindId)
   const setSelectedKind = useWorldStore((state) => state.setSelectedKind)
@@ -38,8 +39,17 @@ export function KindsTree() {
   
   return (
     <div className="h-full bg-white rounded-lg shadow overflow-y-auto">
-      <div className="px-4 py-3 border-b sticky top-0 bg-white">
-        <h2 className="text-lg font-semibold">Kinds</h2>
+      <div className="px-4 py-3 border-b sticky top-0 bg-white flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <PlusCircle size={20} />
+          <h2 className="text-lg font-semibold">Kinds</h2>
+        </div>
+        <button
+          onClick={onNewKind}
+          className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+        >
+          New
+        </button>
       </div>
       <div className="p-2">
         {rootKinds.length === 0 ? (

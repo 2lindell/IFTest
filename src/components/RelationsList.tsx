@@ -1,7 +1,7 @@
-import { useWorldStore } from '../store/worldStore'
 import { Link, Trash2 } from 'lucide-react'
+import { useWorldStore } from '../store/worldStore'
 
-export function RelationsList() {
+export function RelationsList({ onNewRelation }: { onNewRelation: () => void }) {
   const relations = useWorldStore((state) => state.relations)
   const kinds = useWorldStore((state) => state.kinds)
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
@@ -13,11 +13,17 @@ export function RelationsList() {
   
   return (
     <div className="h-full bg-white rounded-lg shadow overflow-y-auto">
-      <div className="px-4 py-3 border-b sticky top-0 bg-white">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+      <div className="px-4 py-3 border-b sticky top-0 bg-white flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <Link size={20} />
-          Relations
-        </h2>
+          <h2 className="text-lg font-semibold">Relations</h2>
+        </div>
+        <button
+          onClick={onNewRelation}
+          className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+        >
+          New
+        </button>
       </div>
       <div className="p-2">
         {relations.length === 0 ? (

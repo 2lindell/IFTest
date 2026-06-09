@@ -1,11 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useWorldStore } from './store/worldStore'
 import { KindsTree } from './components/KindsTree'
 import { RulebooksList } from './components/RulebooksList'
 import { RelationsList } from './components/RelationsList'
+import { ActionsList } from './components/ActionsList'
 import { KindEditor } from './components/KindEditor'
 import { RulebookEditor } from './components/RulebookEditor'
 import { RelationEditor } from './components/RelationEditor'
+import { ActionEditor } from './components/ActionEditor'
 import { StoryBox } from './components/StoryBox'
 import { supabase } from './lib/supabase'
 import { Kind } from './lib/types'
@@ -17,6 +19,32 @@ function App() {
   const selectedKindId = useWorldStore((state) => state.selectedKindId)
   const selectedRulebookId = useWorldStore((state) => state.selectedRulebookId)
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
+  const selectedActionId = useWorldStore((state) => state.selectedActionId)
+  const setActions = useWorldStore((state) => state.setActions)
+  const setSelectedKind = useWorldStore((state) => state.setSelectedKind)
+  const setSelectedRelation = useWorldStore((state) => state.setSelectedRelation)
+  const setSelectedAction = useWorldStore((state) => state.setSelectedAction)
+  const [isCreatingKind, setIsCreatingKind] = useState(false)
+  const [isCreatingRelation, setIsCreatingRelation] = useState(false)
+  const [isCreatingAction, setIsCreatingAction] = useState(false)
+
+  useEffect(() => {
+    if (selectedActionId && isCreatingAction) {
+      setIsCreatingAction(false)
+    }
+  }, [selectedActionId, isCreatingAction])
+
+  useEffect(() => {
+    if (selectedKindId && isCreatingKind) {
+      setIsCreatingKind(false)
+    }
+  }, [selectedKindId, isCreatingKind])
+
+  useEffect(() => {
+    if (selectedRelationId && isCreatingRelation) {
+      setIsCreatingRelation(false)
+    }
+  }, [selectedRelationId, isCreatingRelation])
   
   useEffect(() => {
     const loadData = async () => {
@@ -25,6 +53,7 @@ function App() {
         setKinds([])
         setRulebooks([])
         setRelations([])
+        setActions([])
         return
       }
 
@@ -51,8 +80,10 @@ function App() {
           }
         }
 
+        const kindById = new Map<string, typeof loadedKinds[number]>()
         const kindByName = new Map<string, typeof loadedKinds[number]>()
         for (const kind of loadedKinds) {
+          kindById.set(kind.kind_id, kind)
           kindByName.set(kind.kind_name, kind)
         }
 
@@ -119,16 +150,39 @@ function App() {
           }
         })
 
+        const { data: actionsData, error: actionsError } = await supabase
+          .from('Actions')
+          .select('*')
+
+        if (actionsError) throw actionsError
+
+        const loadedActions = (actionsData ?? []).map((action: any) => ({
+          action_id: String(action.action_id),
+          action_name: String(action.action_name),
+          action_direct_kind: action.action_direct_kind ? String(action.action_direct_kind) : undefined,
+          action_indirect_kind: action.action_indirect_kind ? String(action.action_indirect_kind) : undefined,
+          action_out_of_world: Boolean(action.action_out_of_world),
+          action_commands: Array.isArray(action.action_commands) ? action.action_commands.map(String) : [],
+          action_variables: action.action_variables ?? {},
+          action_direct_kind_name: action.action_direct_kind
+            ? kindById.get(String(action.action_direct_kind))?.kind_name
+            : undefined,
+          action_indirect_kind_name: action.action_indirect_kind
+            ? kindById.get(String(action.action_indirect_kind))?.kind_name
+            : undefined,
+        }))
+
         setKinds(loadedKinds)
         setRulebooks(enrichedRulebooks)
         setRelations(enrichedRelations)
+        setActions(loadedActions)
       } catch (error) {
         console.error('Error loading data:', error)
       }
     }
     
     loadData()
-  }, [setKinds, setRulebooks, setRelations])
+  }, [setKinds, setRulebooks, setRelations, setActions])
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -146,32 +200,62 @@ function App() {
           {/* Left Sidebar - Kinds, Rulebooks, and Relations */}
           <div className="col-span-3 space-y-4 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-hidden min-h-0">
-              <KindsTree />
+              <KindsTree onNewKind={() => {
+                setSelectedKind(undefined)
+                setSelectedRelation(undefined)
+                setSelectedAction(undefined)
+                setIsCreatingKind(true)
+              }} />
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
               <RulebooksList />
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
-              <RelationsList />
+              <RelationsList onNewRelation={() => {
+                setSelectedRelation(undefined)
+                setSelectedKind(undefined)
+                setSelectedAction(undefined)
+                setIsCreatingRelation(true)
+              }} />
+            </div>
+            <div className="flex-1 overflow-hidden min-h-0">
+              <ActionsList
+                onNewAction={() => {
+                  setSelectedAction(undefined)
+                  setIsCreatingAction(true)
+                }}
+              />
             </div>
           </div>
-          
-          {/* Main Content - Editors and Details */}
           <div className="col-span-9 overflow-auto">
-            {selectedKindId && !selectedRulebookId && !selectedRelationId && (
-              <KindEditor />
+            {(selectedKindId || isCreatingKind) && !selectedRulebookId && !selectedRelationId && !selectedActionId && (
+              <KindEditor
+                isNew={isCreatingKind}
+                onSaved={() => setIsCreatingKind(false)}
+                onCancel={() => setIsCreatingKind(false)}
+              />
             )}
-            {selectedRulebookId && !selectedKindId && !selectedRelationId && (
+            {selectedRulebookId && !selectedKindId && !selectedRelationId && !selectedActionId && (
               <RulebookEditor />
             )}
-            {selectedRelationId && !selectedKindId && !selectedRulebookId && (
-              <RelationEditor />
+            {(selectedRelationId || isCreatingRelation) && !selectedKindId && !selectedRulebookId && !selectedActionId && (
+              <RelationEditor
+                isNew={isCreatingRelation}
+                onSaved={() => setIsCreatingRelation(false)}
+                onCancel={() => setIsCreatingRelation(false)}
+              />
             )}
-            {!selectedKindId && !selectedRulebookId && !selectedRelationId && (
+            {(selectedActionId || isCreatingAction) && !selectedKindId && !selectedRulebookId && !selectedRelationId && (
+              <ActionEditor
+                isNew={isCreatingAction}
+                onSaved={() => setIsCreatingAction(false)}
+              />
+            )}
+            {!selectedKindId && !selectedRulebookId && !selectedRelationId && !selectedActionId && !isCreatingAction && !isCreatingKind && !isCreatingRelation && (
               <div className="bg-white rounded-lg shadow flex items-center justify-center p-8">
                 <div className="text-center text-gray-500">
-                  <p className="text-lg font-semibold">Select a Kind, Rulebook, or Relation to begin</p>
-                  <p className="text-sm mt-2">Choose from the left panel to view details</p>
+                  <p className="text-lg font-semibold">Select a Kind, Rulebook, Relation, or Action to begin</p>
+                  <p className="text-sm mt-2">Choose from the left panel to view details or create a new action.</p>
                 </div>
               </div>
             )}

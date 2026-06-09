@@ -12,6 +12,7 @@ const assertionViews: AssertionView[] = [
   { viewName: 'Rulebook Assertions', fieldName: 'rulebook_assertion' },
   { viewName: 'Relation Assertions', fieldName: 'relation_assertion' },
   { viewName: 'Relation Verb Assertions', fieldName: 'relation_verb_assertion' },
+  { viewName: 'Action Assertions', fieldName: 'action_assertion' },
   { viewName: 'Kinds', fieldName: 'kind_assertion' },
   { viewName: 'Kinds of Value', fieldName: 'kind_assertion' },
 ]
@@ -21,10 +22,58 @@ type InsertTarget = {
   fieldName: string
 }
 
+function singularizeKindName(kindName: string) {
+  const normalized = kindName.trim()
+  if (/s$/i.test(normalized) && !/ss$/i.test(normalized)) {
+    return normalized.replace(/s$/i, '')
+  }
+  return normalized
+}
+
+function parseActionAssertion(statement: string) {
+  const trimmed = statement.trim()
+  const actionMatch = trimmed.match(/^(?<name>.+?) is an action (?:(?<apply>applying to (?<applySpec>.+?))|(?<out>out of world)|(?<nothing>nothing))\.$/i)
+  if (!actionMatch?.groups) return null
+
+  const actionName = actionMatch.groups.name.trim()
+  const outOfWorld = Boolean(actionMatch.groups.out)
+  const nothing = Boolean(actionMatch.groups.nothing)
+  let directKindName: string | undefined
+  let indirectKindName: string | undefined
+
+  const applySpec = actionMatch.groups.applySpec
+  if (applySpec) {
+    const pairMatch = applySpec.match(/^one (?<first>.+?) and one (?<second>.+)$/i)
+    const twoMatch = applySpec.match(/^two (?<kind>.+)$/i)
+    const oneMatch = applySpec.match(/^one (?<kind>.+)$/i)
+
+    if (pairMatch?.groups) {
+      directKindName = singularizeKindName(pairMatch.groups.first.trim())
+      indirectKindName = singularizeKindName(pairMatch.groups.second.trim())
+    } else if (twoMatch?.groups) {
+      directKindName = singularizeKindName(twoMatch.groups.kind.trim())
+      indirectKindName = directKindName
+    } else if (oneMatch?.groups) {
+      directKindName = singularizeKindName(oneMatch.groups.kind.trim())
+    }
+  }
+
+  return {
+    actionName,
+    directKindName,
+    indirectKindName,
+    outOfWorld,
+    nothing,
+  }
+}
+
 function inferInsertTarget(block: string, kindNameToView: Map<string, string>): InsertTarget {
   const trimmed = block.trim()
   if (/^The verb .+? means the (reversed )?.+? relation\.$/i.test(trimmed)) {
     return { viewName: 'Relation Verb Assertions', fieldName: 'relation_verb_assertion' }
+  }
+  if (/ is an action /i.test(trimmed)) {
+    return { viewName: 'Action Assertions', fieldName: 'action_assertion' }
   }
 
   if (/^.+? relates (one|various) .+? to (one|various) .+?\.$/i.test(trimmed)) {
@@ -184,6 +233,7 @@ export function StoryBox() {
       if (viewName === 'Kinds' || viewName === 'Kinds of Value') return 'All Kinds'
       if (viewName === 'Relation Assertions' || viewName === 'Relation Verb Assertions') return 'Relations'
       if (viewName === 'Rulebook Assertions') return 'Rulebooks'
+      if (viewName === 'Action Assertions') return 'Actions'
       return viewName
     }
 
@@ -203,7 +253,7 @@ export function StoryBox() {
     }
 
     // For insert groups, generate SQL that targets base tables and parses semantics
-    for (const { viewName, fieldName, values } of insertGroups.values()) {
+    for (const { values } of insertGroups.values()) {
       for (const value of values) {
         const trimmed = value.trim()
         // kind
@@ -217,6 +267,31 @@ export function StoryBox() {
             paramStmts.push({ text: `INSERT INTO "All Kinds" (kind_name) VALUES ($1);`, params: [kindName] })
           }
           continue
+        }
+
+        // action
+        const actionMatch = parseActionAssertion(trimmed)
+        if (actionMatch) {
+          const { actionName, directKindName, indirectKindName, outOfWorld, nothing } = actionMatch
+          if (outOfWorld) {
+            paramStmts.push({ text: `INSERT INTO "Actions" (action_name, action_out_of_world) VALUES ($1, true);`, params: [actionName] })
+            continue
+          }
+
+          if (nothing) {
+            paramStmts.push({ text: `INSERT INTO "Actions" (action_name) VALUES ($1);`, params: [actionName] })
+            continue
+          }
+
+          if (directKindName && indirectKindName) {
+            paramStmts.push({ text: `INSERT INTO "Actions" (action_name, action_direct_kind, action_indirect_kind) VALUES ($1, (SELECT kind_id FROM "All Kinds" WHERE lower(kind_name) = lower($2) LIMIT 1), (SELECT kind_id FROM "All Kinds" WHERE lower(kind_name) = lower($3) LIMIT 1));`, params: [actionName, directKindName, indirectKindName] })
+            continue
+          }
+
+          if (directKindName) {
+            paramStmts.push({ text: `INSERT INTO "Actions" (action_name, action_direct_kind) VALUES ($1, (SELECT kind_id FROM "All Kinds" WHERE lower(kind_name) = lower($2) LIMIT 1));`, params: [actionName, directKindName] })
+            continue
+          }
         }
 
         // relation
@@ -441,6 +516,34 @@ export function StoryBox() {
           const parentName = kindMatch.groups.parent ? kindMatch.groups.parent.trim() : undefined
           await ensureKind(kindName, parentName)
           continue
+        }
+
+        // try action assertion
+        const actionParse = parseActionAssertion(block)
+        if (actionParse) {
+          const { actionName, directKindName, indirectKindName, outOfWorld, nothing } = actionParse
+          if (outOfWorld) {
+            await sb.from('Actions').insert([{ action_name: actionName, action_out_of_world: true }])
+            continue
+          }
+
+          if (nothing) {
+            await sb.from('Actions').insert([{ action_name: actionName }])
+            continue
+          }
+
+          if (directKindName && indirectKindName) {
+            const directId = await ensureKind(directKindName)
+            const indirectId = await ensureKind(indirectKindName)
+            await sb.from('Actions').insert([{ action_name: actionName, action_direct_kind: directId, action_indirect_kind: indirectId }])
+            continue
+          }
+
+          if (directKindName) {
+            const directId = await ensureKind(directKindName)
+            await sb.from('Actions').insert([{ action_name: actionName, action_direct_kind: directId }])
+            continue
+          }
         }
 
         // try relation assertion

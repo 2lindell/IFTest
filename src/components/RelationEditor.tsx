@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useWorldStore } from '../store/worldStore'
+import { supabase } from '../lib/supabase'
 
 function conjugateToThirdPerson(verb: string): string {
   const phrase = verb.toLowerCase().trim()
@@ -209,135 +211,295 @@ function presentPluralForm(verb: string): string {
   return rest ? mainVerb + ' ' + rest : mainVerb
 }
 
-export function RelationEditor() {
+interface RelationEditorProps {
+  isNew?: boolean
+  onSaved?: (id: string) => void
+  onCancel?: () => void
+}
+
+export function RelationEditor({ isNew, onSaved, onCancel }: RelationEditorProps) {
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
   const relations = useWorldStore((state) => state.relations)
   const kinds = useWorldStore((state) => state.kinds)
-  
+  const addRelation = useWorldStore((state) => state.addRelation)
+  const updateRelation = useWorldStore((state) => state.updateRelation)
+  const setSelectedRelation = useWorldStore((state) => state.setSelectedRelation)
+
   const selectedRelation = relations.find(
     (r) => r.relation_id === selectedRelationId
   )
 
-  const fromVarious = isVariousOnSide(selectedRelation?.relation_type, 'from')
-  const toVarious = isVariousOnSide(selectedRelation?.relation_type, 'to')
+  const [relationName, setRelationName] = useState('')
+  const [relationType, setRelationType] = useState('')
+  const [relatesKindId, setRelatesKindId] = useState('')
+  const [relatesToKindId, setRelatesToKindId] = useState('')
+  const [verbsText, setVerbsText] = useState('')
+  const [reversedVerbsText, setReversedVerbsText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  const forwardInf = selectedRelation?.relation_verb?.[0] || 'relate'
-  const forwardSing = conjugateToThirdPerson(forwardInf)
-  const forwardPlur = presentPluralForm(forwardInf)
+  useEffect(() => {
+    if (isNew) {
+      setRelationName('')
+      setRelationType('')
+      setRelatesKindId('')
+      setRelatesToKindId('')
+      setVerbsText('')
+      setReversedVerbsText('')
+      setError(null)
+      return
+    }
 
-  const reversedInf = selectedRelation?.relation_reversed_verb?.[0] || ''
-  const reversedSing = reversedInf ? conjugateToThirdPerson(reversedInf) : ''
-  const reversedPlur = reversedInf ? presentPluralForm(reversedInf) : ''
+    if (selectedRelation) {
+      setRelationName(selectedRelation.relation_name || '')
+      setRelationType(selectedRelation.relation_type || '')
+      setRelatesKindId(selectedRelation.relation_relates_kind)
+      setRelatesToKindId(selectedRelation.relation_relates_to_kind)
+      setVerbsText((selectedRelation.relation_verb || []).join('\n'))
+      setReversedVerbsText((selectedRelation.relation_reversed_verb || []).join('\n'))
+      setError(null)
+    }
+  }, [selectedRelation, isNew])
 
   const lookupKindName = (kindId: string) =>
     kinds.find((kind) => kind.kind_id === kindId)?.kind_name || kindId
-  
-  if (!selectedRelation) {
+
+  const splitVerbs = (text: string) =>
+    text
+      .split('\n')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0)
+
+  const verbs = splitVerbs(verbsText)
+  const reversedVerbs = splitVerbs(reversedVerbsText)
+  const fromVarious = isVariousOnSide(relationType, 'from')
+  const toVarious = isVariousOnSide(relationType, 'to')
+  const forwardInf = verbs[0] || 'relate'
+  const forwardSing = conjugateToThirdPerson(forwardInf)
+  const forwardPlur = presentPluralForm(forwardInf)
+
+  const reversedInf = reversedVerbs[0] || ''
+  const reversedSing = reversedInf ? conjugateToThirdPerson(reversedInf) : ''
+  const reversedPlur = reversedInf ? presentPluralForm(reversedInf) : ''
+
+  if (!selectedRelation && !isNew) {
     return null
   }
-  
+
+  const selectedRelatesKind = relatesKindId ? lookupKindName(relatesKindId) : ''
+  const selectedRelatesToKind = relatesToKindId ? lookupKindName(relatesToKindId) : ''
+
+  const handleSave = async () => {
+    setError(null)
+
+    if (!relationName.trim()) {
+      setError('Relation name is required.')
+      return
+    }
+
+    if (!relatesKindId || !relatesToKindId) {
+      setError('Both related kinds must be selected.')
+      return
+    }
+
+    setSaving(true)
+
+    const payload = {
+      relation_name: relationName.trim(),
+      relation_type: relationType || null,
+      relation_relates_kind: relatesKindId,
+      relation_relates_to_kind: relatesToKindId,
+      relation_verb: verbs,
+      relation_reversed_verb: reversedVerbs,
+    }
+
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client is not available.')
+      }
+
+      if (isNew) {
+        const { data, error } = await supabase
+          .from('Relations')
+          .insert([payload])
+          .select('*')
+          .single()
+
+        if (error) throw error
+        if (!data) throw new Error('No relation returned from insert.')
+
+        const newRelation = {
+          relation_id: String(data.relation_id),
+          relation_name: String(data.relation_name),
+          relation_type: data.relation_type,
+          relation_relates_kind: String(data.relation_relates_kind),
+          relation_relates_to_kind: String(data.relation_relates_to_kind),
+          relation_verb: data.relation_verb || [],
+          relation_reversed_verb: data.relation_reversed_verb || [],
+          relation_relates_kind_name: lookupKindName(String(data.relation_relates_kind)),
+          relation_relates_to_kind_name: lookupKindName(String(data.relation_relates_to_kind)),
+        }
+
+        addRelation(newRelation)
+        setSelectedRelation(newRelation.relation_id)
+        onSaved?.(newRelation.relation_id)
+      } else if (selectedRelation) {
+        const { error } = await supabase
+          .from('Relations')
+          .update(payload)
+          .eq('relation_id', selectedRelation.relation_id)
+
+        if (error) throw error
+
+        updateRelation(selectedRelation.relation_id, {
+          relation_name: payload.relation_name,
+          relation_type: payload.relation_type ?? undefined,
+          relation_relates_kind: payload.relation_relates_kind,
+          relation_relates_to_kind: payload.relation_relates_to_kind,
+          relation_verb: payload.relation_verb,
+          relation_reversed_verb: payload.relation_reversed_verb,
+          relation_relates_kind_name: lookupKindName(payload.relation_relates_kind),
+          relation_relates_to_kind_name: lookupKindName(payload.relation_relates_to_kind),
+        })
+        onSaved?.(selectedRelation.relation_id)
+      }
+    } catch (err: any) {
+      setError(err?.message ?? 'Unable to save relation.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-2xl font-bold">{selectedRelation.relation_name}</h2>
+      <div className="px-6 py-4 border-b flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">{isNew ? 'New Relation' : relationName}</h2>
+          {!isNew && selectedRelation && (
+            <p className="text-sm text-gray-600 mt-1">Relation ID: {selectedRelation.relation_id}</p>
+          )}
+        </div>
+        {onCancel && isNew && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        )}
       </div>
       
       <div className="flex-1 overflow-auto p-6">
         <div className="space-y-6">
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Relation ID
-              </label>
-              <p className="text-gray-900 font-mono text-xs">{selectedRelation.relation_id}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Relation Type
-              </label>
-              <p className="text-gray-900 capitalize">
-                {selectedRelation.relation_type || 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          {/* Related Kinds */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Relates Kind
-              </label>
-              <p className="text-gray-900">
-                {selectedRelation.relation_relates_kind_name || lookupKindName(selectedRelation.relation_relates_kind)}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Relates To Kind
-              </label>
-              <p className="text-gray-900">
-                {selectedRelation.relation_relates_to_kind_name || lookupKindName(selectedRelation.relation_relates_to_kind)}
-              </p>
-            </div>
-          </div>
-
-          {/* Verbs */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Verbs
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {selectedRelation.relation_verb && selectedRelation.relation_verb.length > 0 ? (
-                selectedRelation.relation_verb.map((verb, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                  >
-                    {verb}
-                  </span>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm">No verbs defined</p>
-              )}
+            <h3 className="text-lg font-semibold mb-3">Relation Details</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Relation Name</label>
+                <input
+                  value={relationName}
+                  onChange={(e) => setRelationName(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Relation Type</label>
+                <input
+                  value={relationType}
+                  onChange={(e) => setRelationType(e.target.value)}
+                  placeholder="e.g. one-to-many"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Relates Kind</label>
+                <select
+                  value={relatesKindId}
+                  onChange={(e) => setRelatesKindId(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Choose a kind</option>
+                  {kinds.map((kind) => (
+                    <option key={kind.kind_id} value={kind.kind_id}>
+                      {kind.kind_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Relates To Kind</label>
+                <select
+                  value={relatesToKindId}
+                  onChange={(e) => setRelatesToKindId(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Choose a kind</option>
+                  {kinds.map((kind) => (
+                    <option key={kind.kind_id} value={kind.kind_id}>
+                      {kind.kind_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Reversed Verbs */}
-          {selectedRelation.relation_reversed_verb && selectedRelation.relation_reversed_verb.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Verbs (Reversed)
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {selectedRelation.relation_reversed_verb.map((verb, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                  >
-                    {verb}
-                  </span>
-                ))}
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Verbs</label>
+              <textarea
+                value={verbsText}
+                onChange={(e) => setVerbsText(e.target.value)}
+                rows={6}
+                placeholder="one verb per line"
+                className="w-full rounded-lg border border-gray-300 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reversed Verbs</label>
+              <textarea
+                value={reversedVerbsText}
+                onChange={(e) => setReversedVerbsText(e.target.value)}
+                rows={6}
+                placeholder="one verb per line"
+                className="w-full rounded-lg border border-gray-300 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
             </div>
           )}
 
-          {/* Info Box */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
             <p className="text-sm text-blue-900">
-              <strong>Relation:</strong> {annotateKindName(selectedRelation.relation_relates_kind_name || lookupKindName(selectedRelation.relation_relates_kind), selectedRelation.relation_type, 'from')}{' '}
-              { fromVarious ? `${forwardSing} (${forwardPlur})` : forwardSing }{' '}
-              {annotateKindName(selectedRelation.relation_relates_to_kind_name || lookupKindName(selectedRelation.relation_relates_to_kind), selectedRelation.relation_type, 'to')}
+              <strong>Relation:</strong> {annotateKindName(selectedRelatesKind || selectedRelation?.relation_relates_kind_name || lookupKindName(selectedRelation?.relation_relates_kind || ''), relationType, 'from')}{' '}
+              {fromVarious ? `${forwardSing} (${forwardPlur})` : forwardSing}{' '}
+              {annotateKindName(selectedRelatesToKind || selectedRelation?.relation_relates_to_kind_name || lookupKindName(selectedRelation?.relation_relates_to_kind || ''), relationType, 'to')}
             </p>
-            {selectedRelation.relation_reversed_verb && selectedRelation.relation_reversed_verb.length > 0 && (
+            {reversedVerbs.length > 0 && (
               <p className="text-sm text-blue-900">
-                <strong>Reversed:</strong> {annotateKindName(selectedRelation.relation_relates_to_kind_name || lookupKindName(selectedRelation.relation_relates_to_kind), selectedRelation.relation_type, 'to')}{' '}
-                { toVarious ? `${reversedSing} (${reversedPlur})` : reversedSing }{' '}
-                {annotateKindName(selectedRelation.relation_relates_kind_name || lookupKindName(selectedRelation.relation_relates_kind), selectedRelation.relation_type, 'from')}
+                <strong>Reversed:</strong> {annotateKindName(selectedRelatesToKind || selectedRelation?.relation_relates_to_kind_name || lookupKindName(selectedRelation?.relation_relates_to_kind || ''), relationType, 'to')}{' '}
+                {toVarious ? `${reversedSing} (${reversedPlur})` : reversedSing}{' '}
+                {annotateKindName(selectedRelatesKind || selectedRelation?.relation_relates_kind_name || lookupKindName(selectedRelation?.relation_relates_kind || ''), relationType, 'from')}
               </p>
             )}
           </div>
         </div>
+      </div>
+
+      <div className="border-t px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+        >
+          {saving ? 'Saving…' : isNew ? 'Create Relation' : 'Save Changes'}
+        </button>
       </div>
     </div>
   )
