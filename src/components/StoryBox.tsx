@@ -15,6 +15,9 @@ const assertionViews: AssertionView[] = [
   { viewName: 'Action Assertions', fieldName: 'action_assertion' },
   { viewName: 'Kinds', fieldName: 'kind_assertion' },
   { viewName: 'Kinds of Value', fieldName: 'kind_assertion' },
+  { viewName: 'Entity Assertions', fieldName: 'entity_assertion_with_properties' },
+  { viewName: 'Kind-Property Assertions', fieldName: 'kindproperty_assertion' },
+  { viewName: 'Variable Assertions', fieldName: 'variable_assertion' },
 ]
 
 type InsertTarget = {
@@ -234,6 +237,9 @@ export function StoryBox() {
       if (viewName === 'Relation Assertions' || viewName === 'Relation Verb Assertions') return 'Relations'
       if (viewName === 'Rulebook Assertions') return 'Rulebooks'
       if (viewName === 'Action Assertions') return 'Actions'
+      if (viewName === 'Variable Assertions') return 'Variables'
+      if (viewName === 'Entity Assertions') return 'Entities'
+      if (viewName === 'Kind-Property Assertions') return 'Kind-Properties'
       return viewName
     }
 

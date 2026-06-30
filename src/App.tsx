@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useWorldStore } from './store/worldStore'
-import { KindsTree } from './components/KindsTree'
-import { RulebooksList } from './components/RulebooksList'
-import { RelationsList } from './components/RelationsList'
-import { ActionsList } from './components/ActionsList'
+// Lists are provided via ListsPanel
+import { ListsPanel } from './components/ListsPanel'
 import { KindEditor } from './components/KindEditor'
 import { RulebookEditor } from './components/RulebookEditor'
 import { RelationEditor } from './components/RelationEditor'
@@ -16,14 +14,17 @@ function App() {
   const setKinds = useWorldStore((state) => state.setKinds)
   const setRulebooks = useWorldStore((state) => state.setRulebooks)
   const setRelations = useWorldStore((state) => state.setRelations)
+  const setEntities = useWorldStore((state) => state.setEntities)
+  const setProperties = useWorldStore((state) => state.setProperties)
+  const setVariables = useWorldStore((state) => state.setVariables)
+  const setKindProperties = useWorldStore((state) => state.setKindProperties)
+  const setEntityProperties = useWorldStore((state) => state.setEntityProperties)
   const selectedKindId = useWorldStore((state) => state.selectedKindId)
   const selectedRulebookId = useWorldStore((state) => state.selectedRulebookId)
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
   const selectedActionId = useWorldStore((state) => state.selectedActionId)
   const setActions = useWorldStore((state) => state.setActions)
-  const setSelectedKind = useWorldStore((state) => state.setSelectedKind)
-  const setSelectedRelation = useWorldStore((state) => state.setSelectedRelation)
-  const setSelectedAction = useWorldStore((state) => state.setSelectedAction)
+  
   const [isCreatingKind, setIsCreatingKind] = useState(false)
   const [isCreatingRelation, setIsCreatingRelation] = useState(false)
   const [isCreatingAction, setIsCreatingAction] = useState(false)
@@ -176,13 +177,32 @@ function App() {
         setRulebooks(enrichedRulebooks)
         setRelations(enrichedRelations)
         setActions(loadedActions)
+
+        // Load newly added tables from the migration
+        try {
+          const [{ data: entities }, { data: properties }, { data: variables }, { data: kp }, { data: ep }] = await Promise.all([
+            supabase.from('Entities').select('*'),
+            supabase.from('Properties').select('*'),
+            supabase.from('Variables').select('*'),
+            supabase.from('Kind-Properties').select('*'),
+            supabase.from('Entity-Properties').select('*'),
+          ])
+
+          setEntities((entities as any) ?? [])
+          setProperties((properties as any) ?? [])
+          setVariables((variables as any) ?? [])
+          setKindProperties((kp as any) ?? [])
+          setEntityProperties((ep as any) ?? [])
+        } catch (e) {
+          console.warn('Error loading new tables:', e)
+        }
       } catch (error) {
         console.error('Error loading data:', error)
       }
     }
     
     loadData()
-  }, [setKinds, setRulebooks, setRelations, setActions])
+  }, [setKinds, setRulebooks, setRelations, setActions, setEntities, setProperties, setVariables, setKindProperties, setEntityProperties])
   
   return (
     <div className="min-h-screen bg-gray-100">
@@ -197,34 +217,9 @@ function App() {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-12 gap-6 h-[calc(100vh-200px)]">
-          {/* Left Sidebar - Kinds, Rulebooks, and Relations */}
           <div className="col-span-3 space-y-4 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-hidden min-h-0">
-              <KindsTree onNewKind={() => {
-                setSelectedKind(undefined)
-                setSelectedRelation(undefined)
-                setSelectedAction(undefined)
-                setIsCreatingKind(true)
-              }} />
-            </div>
-            <div className="flex-1 overflow-hidden min-h-0">
-              <RulebooksList />
-            </div>
-            <div className="flex-1 overflow-hidden min-h-0">
-              <RelationsList onNewRelation={() => {
-                setSelectedRelation(undefined)
-                setSelectedKind(undefined)
-                setSelectedAction(undefined)
-                setIsCreatingRelation(true)
-              }} />
-            </div>
-            <div className="flex-1 overflow-hidden min-h-0">
-              <ActionsList
-                onNewAction={() => {
-                  setSelectedAction(undefined)
-                  setIsCreatingAction(true)
-                }}
-              />
+              <ListsPanel />
             </div>
           </div>
           <div className="col-span-9 overflow-auto">

@@ -32,6 +32,16 @@ interface Store extends WorldState {
   setRules: (rules: Rule[]) => void
   setRelations: (relations: Relation[]) => void
   setActions: (actions: Action[]) => void
+  entities: any[]
+  properties: any[]
+  variables: any[]
+  kindProperties: any[]
+  entityProperties: any[]
+  setEntities: (entities: any[]) => void
+  setProperties: (properties: any[]) => void
+  setVariables: (variables: any[]) => void
+  setKindProperties: (kps: any[]) => void
+  setEntityProperties: (eps: any[]) => void
 }
 
 export const useWorldStore = create<Store>((set) => ({
@@ -41,6 +51,11 @@ export const useWorldStore = create<Store>((set) => ({
   rules: [],
   relations: [],
   actions: [],
+  entities: [],
+  properties: [],
+  variables: [],
+  kindProperties: [],
+  entityProperties: [],
   selectedKindId: undefined,
   selectedRulebookId: undefined,
   selectedObjectId: undefined,
@@ -143,6 +158,11 @@ export const useWorldStore = create<Store>((set) => ({
   setSelectedAction: (id) => set({ selectedActionId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedRelationId: undefined }),
   setKinds: (kinds) => set({ kinds }),
   setRulebooks: (rulebooks) => set({ rulebooks }),
+  setEntities: (entities) => set({ entities }),
+  setProperties: (properties) => set({ properties }),
+  setVariables: (variables) => set({ variables }),
+  setKindProperties: (kps) => set({ kindProperties: kps }),
+  setEntityProperties: (eps) => set({ entityProperties: eps }),
   setObjects: (objects) => set({ objects }),
   setRules: (rules) => set({ rules }),
   setRelations: (relations) => set({ relations }),
