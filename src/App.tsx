@@ -6,6 +6,7 @@ import { KindEditor } from './components/KindEditor'
 import { RulebookEditor } from './components/RulebookEditor'
 import { RelationEditor } from './components/RelationEditor'
 import { ActionEditor } from './components/ActionEditor'
+import { EntityEditor } from './components/EntityEditor'
 import { StoryBox } from './components/StoryBox'
 import { supabase } from './lib/supabase'
 import { Kind } from './lib/types'
@@ -23,6 +24,7 @@ function App() {
   const selectedRulebookId = useWorldStore((state) => state.selectedRulebookId)
   const selectedRelationId = useWorldStore((state) => state.selectedRelationId)
   const selectedActionId = useWorldStore((state) => state.selectedActionId)
+  const selectedEntityId = useWorldStore((state) => state.selectedEntityId)
   const setActions = useWorldStore((state) => state.setActions)
   
   const [isCreatingKind, setIsCreatingKind] = useState(false)
@@ -204,6 +206,10 @@ function App() {
     loadData()
   }, [setKinds, setRulebooks, setRelations, setActions, setEntities, setProperties, setVariables, setKindProperties, setEntityProperties])
   
+  const activeDetail = Boolean(
+    selectedKindId || selectedRulebookId || selectedRelationId || selectedActionId || selectedEntityId || isCreatingKind || isCreatingRelation || isCreatingAction,
+  )
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
@@ -240,13 +246,17 @@ function App() {
                 onCancel={() => setIsCreatingRelation(false)}
               />
             )}
-            {(selectedActionId || isCreatingAction) && !selectedKindId && !selectedRulebookId && !selectedRelationId && (
-              <ActionEditor
-                isNew={isCreatingAction}
-                onSaved={() => setIsCreatingAction(false)}
-              />
+            {(selectedEntityId || selectedActionId || isCreatingAction) && !selectedKindId && !selectedRulebookId && !selectedRelationId && (
+              selectedEntityId ? (
+                <EntityEditor />
+              ) : (
+                <ActionEditor
+                  isNew={isCreatingAction}
+                  onSaved={() => setIsCreatingAction(false)}
+                />
+              )
             )}
-            {!selectedKindId && !selectedRulebookId && !selectedRelationId && !selectedActionId && !isCreatingAction && !isCreatingKind && !isCreatingRelation && (
+            {!activeDetail && (
               <div className="bg-white rounded-lg shadow flex items-center justify-center p-8">
                 <div className="text-center text-gray-500">
                   <p className="text-lg font-semibold">Select a Kind, Rulebook, Relation, or Action to begin</p>
@@ -257,7 +267,6 @@ function App() {
           </div>
         </div>
 
-        {/* Rulebook Declarations Section */}
         <div className="mt-8">
           <StoryBox />
         </div>

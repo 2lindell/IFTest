@@ -6,8 +6,7 @@ import { ActionsList } from './ActionsList'
 import { EntitiesList } from './EntitiesList'
 import { PropertiesList } from './PropertiesList'
 import { VariablesList } from './VariablesList'
-import { KindPropertiesList } from './KindPropertiesList'
-import { EntityPropertiesList } from './EntityPropertiesList'
+// Kind/Entity properties are now handled inside their editors
 
 const tabs = [
   'Kinds',
@@ -17,8 +16,6 @@ const tabs = [
   'Entities',
   'Properties',
   'Variables',
-  'Kind-Properties',
-  'Entity-Properties',
 ]
 
 export function ListsPanel() {
@@ -46,8 +43,7 @@ export function ListsPanel() {
         {active === 'Entities' && <EntitiesList />}
         {active === 'Properties' && <PropertiesList />}
         {active === 'Variables' && <VariablesList />}
-        {active === 'Kind-Properties' && <KindPropertiesList />}
-        {active === 'Entity-Properties' && <EntityPropertiesList />}
+        {/* Kind-Properties and Entity-Properties loaded inside editors */}
       </div>
     </div>
   )

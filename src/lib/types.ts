@@ -31,6 +31,13 @@ export interface WorldObject {
   properties: Record<string, unknown>
 }
 
+export interface Entity {
+  entity_id: string
+  entity_name: string
+  entity_of_kind_id: string
+  entity_of_kind_name?: string
+}
+
 export interface Rule {
   id: string
   name: string
@@ -76,6 +83,7 @@ export interface WorldState {
   selectedKindId?: string
   selectedRulebookId?: string
   selectedObjectId?: string
+  selectedEntityId?: string
   selectedRuleId?: string
   selectedRelationId?: string
   selectedActionId?: string

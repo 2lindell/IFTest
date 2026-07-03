@@ -23,6 +23,7 @@ interface Store extends WorldState {
   setSelectedKind: (id?: string) => void
   setSelectedRulebook: (id?: string) => void
   setSelectedObject: (id?: string) => void
+  setSelectedEntity: (id?: string) => void
   setSelectedRule: (id?: string) => void
   setSelectedRelation: (id?: string) => void
   setSelectedAction: (id?: string) => void
@@ -59,10 +60,11 @@ export const useWorldStore = create<Store>((set) => ({
   selectedKindId: undefined,
   selectedRulebookId: undefined,
   selectedObjectId: undefined,
+  selectedEntityId: undefined,
   selectedRuleId: undefined,
   selectedRelationId: undefined,
   selectedActionId: undefined,
-  
+
   addKind: (kind) => set((state) => ({
     kinds: [...state.kinds, kind],
   })),
@@ -150,12 +152,13 @@ export const useWorldStore = create<Store>((set) => ({
     actions: state.actions.filter((action) => action.action_id !== id),
     selectedActionId: state.selectedActionId === id ? undefined : state.selectedActionId,
   })),
-  setSelectedKind: (id) => set({ selectedKindId: id, selectedRulebookId: undefined, selectedRelationId: undefined, selectedActionId: undefined }),
-  setSelectedRulebook: (id) => set({ selectedRulebookId: id, selectedKindId: undefined, selectedRelationId: undefined, selectedActionId: undefined }),
+  setSelectedKind: (id) => set({ selectedKindId: id, selectedRulebookId: undefined, selectedRelationId: undefined, selectedActionId: undefined, selectedEntityId: undefined }),
+  setSelectedRulebook: (id) => set({ selectedRulebookId: id, selectedKindId: undefined, selectedRelationId: undefined, selectedActionId: undefined, selectedEntityId: undefined }),
   setSelectedObject: (id) => set({ selectedObjectId: id }),
+  setSelectedEntity: (id) => set({ selectedEntityId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedRelationId: undefined, selectedActionId: undefined }),
   setSelectedRule: (id) => set({ selectedRuleId: id }),
-  setSelectedRelation: (id) => set({ selectedRelationId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedActionId: undefined }),
-  setSelectedAction: (id) => set({ selectedActionId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedRelationId: undefined }),
+  setSelectedRelation: (id) => set({ selectedRelationId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedActionId: undefined, selectedEntityId: undefined }),
+  setSelectedAction: (id) => set({ selectedActionId: id, selectedKindId: undefined, selectedRulebookId: undefined, selectedRelationId: undefined, selectedEntityId: undefined }),
   setKinds: (kinds) => set({ kinds }),
   setRulebooks: (rulebooks) => set({ rulebooks }),
   setEntities: (entities) => set({ entities }),
